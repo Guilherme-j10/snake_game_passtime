@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
+  <title>Snake Game</title>
+  <style>
+    * {
+      margin: 0px;
+      padding: 0px;
+      outline: none;
+      box-sizing: border-box;
+      font-family: 'Audiowide', cursive;
+    }
+
+    body {
+      width: 100%;
+      height: 100vh;
+      background-color: black;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    body .header_controls {
+      width: 400px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    body .header_controls h1 {
+      color: #fff;
+      font-size: 1em;
+    }
+
+    body canvas {
+      border: solid 1px #ffffff2d;
+      background-color: black;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="header_controls">
+    <h1 id="points">
+      Pontos: 0
+    </h1>
+  </div>
+  <canvas id="canvas" width="400" height="400"></canvas>
+  <script>
+
+    //criar um timer minimo para o play poder comer a fruta se ele nao consguir comer a fruta dentro desse tempo o jogo acaba
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // divide the size of the apple x by the width of the canvas and you will get the size of the grid
+    const matrix_length = 20 - 1; // remove 1 grid
+    let player_points = 0;
+    let snake_direction = 'bottom';
+    const speed = 0.5;
+
+    const snake_props = {
+      snake_body: [
+        { y: 20, x: 20 },
+        { y: 40, x: 20 }
+      ],
+      snake_dimension_size: {
+        w: 20,
+        h: 20
+      },
+      draw_snake_body() {
+
+        for (let i = 0; i < this.snake_body.length; i++) {
+
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(
+            this.snake_body[i].x,
+            this.snake_body[i].y,
+            this.snake_dimension_size.w,
+            this.snake_dimension_size.h
+          );
+
+        }
+
+      }
+    };
+
+    const generate_random_position = () => (Math.floor(Math.random() * (matrix_length - 0 + 1) + 0)) * 20;
+
+    const get_food_position = () => {
+
+      while (true) {
+
+        const x = generate_random_position();
+        const y = generate_random_position();
+
+        let was_generate_with_wrong_place = false;
+
+        for (let j = 0; j < snake_props.snake_body.length; j++) {
+
+          if (
+            x === snake_props.snake_body[j].x &&
+            y === snake_props.snake_body[j].y
+          ) was_generate_with_wrong_place = true;
+
+        }
+
+        if (was_generate_with_wrong_place) continue;
+
+        return { x, y };
+
+      }
+
+    }
+
+    const food_props = {
+      food_spawn_position: get_food_position(),
+      food_dimension: {
+        w: 20,
+        h: 20
+      },
+      draw_food() {
+
+        ctx.fillStyle = '#86d911';
+        ctx.fillRect(
+          this.food_spawn_position.x,
+          this.food_spawn_position.y,
+          this.food_dimension.w,
+          this.food_dimension.h
+        );
+
+      }
+    }
+
+    window.onkeydown = (event) => {
+
+      if (event.key === 'ArrowUp' || event.key === 'w')
+        snake_direction = snake_direction === 'bottom' ? 'bottom' : 'top'
+
+      if (event.key === 'ArrowRight' || event.key === 'd')
+        snake_direction = snake_direction === 'left' ? 'left' : 'right'
+
+      if (event.key === 'ArrowLeft' || event.key === 'a')
+        snake_direction = snake_direction === 'right' ? 'right' : 'left'
+
+      if (event.key === 'ArrowDown' || event.key === 's')
+        snake_direction = snake_direction === 'top' ? 'top' : 'bottom'
+
+    }
+
+    const draw_grid = () => {
+
+      const max_lines = matrix_length + 1;
+
+      for (let z = 0; z < max_lines; z++) {
+
+        ctx.fillStyle = '#ffffff2d';
+        ctx.fillRect((z + 1) * 20, 0, 1, canvas.height);
+        ctx.fillRect(0, (z + 1) * 20, canvas.width, 1);
+
+      }
+
+    }
+
+    const draw_snake_food = () => food_props.draw_food();
+
+    const gameover = () => window.location.reload();
+
+    const draw_snake_body = () => {
+
+      const snake_length = snake_props.snake_body.length;
+      const snake_body_head_peace = snake_props.snake_body[snake_length - 1];
+      let food_colision_identified = false;
+      let body_colision = false;
+
+      snake_props.draw_snake_body();
+
+      //check collision with your own body
+      for (let x = 0; x < snake_props.snake_body.length - 1; x++) {
+
+        const snake_peace = snake_props.snake_body[x];
+
+        if (
+          (snake_body_head_peace.y + snake_props.snake_dimension_size.h) === snake_peace.y &&
+          snake_body_head_peace.x === snake_peace.x &&
+          snake_direction === 'bottom'
+        ) body_colision = true;
+
+        if (
+          snake_body_head_peace.y === (snake_peace.y + snake_props.snake_dimension_size.h) &&
+          snake_body_head_peace.x === snake_peace.x &&
+          snake_direction === 'top'
+        ) body_colision = true;
+
+        if (
+          (snake_body_head_peace.x + snake_props.snake_dimension_size.w) === snake_peace.x &&
+          snake_body_head_peace.y === snake_peace.y &&
+          snake_direction === 'right'
+        ) body_colision = true;
+
+        if (
+          snake_body_head_peace.x === (snake_peace.x + snake_props.snake_dimension_size.w) &&
+          snake_body_head_peace.y === snake_peace.y &&
+          snake_direction === 'left'
+        ) body_colision = true;
+
+      }
+
+      if (body_colision) gameover();
+
+      //verify colision with food
+      if (
+        (snake_body_head_peace.x + snake_props.snake_dimension_size.w) === food_props.food_spawn_position.x &&
+        snake_body_head_peace.y === food_props.food_spawn_position.y &&
+        snake_direction === 'right'
+      ) food_colision_identified = true;
+
+      if (
+        snake_body_head_peace.x === (food_props.food_spawn_position.x + food_props.food_dimension.w) &&
+        snake_body_head_peace.y === food_props.food_spawn_position.y &&
+        snake_direction === 'left'
+      ) food_colision_identified = true;
+
+      if (
+        (snake_body_head_peace.y + snake_props.snake_dimension_size.h) === food_props.food_spawn_position.y &&
+        snake_body_head_peace.x === food_props.food_spawn_position.x &&
+        snake_direction === 'bottom'
+      ) food_colision_identified = true;
+
+      if (
+        snake_body_head_peace.y === (food_props.food_spawn_position.y + food_props.food_dimension.h) &&
+        snake_body_head_peace.x === food_props.food_spawn_position.x &&
+        snake_direction === 'top'
+      ) food_colision_identified = true;
+
+      //verify colision with borders of canvas
+      if ((snake_body_head_peace.x + snake_props.snake_dimension_size.w) >= canvas.width && snake_direction === 'right') gameover();
+
+      if (snake_body_head_peace.x <= 0 && snake_direction === 'left') gameover();
+
+      if ((snake_body_head_peace.y + snake_props.snake_dimension_size.h) >= canvas.height && snake_direction === 'bottom') gameover();
+
+      if (snake_body_head_peace.y <= 0 && snake_direction === 'top') gameover();
+
+      //moviment logic
+      if (snake_direction === 'right')
+        snake_props.snake_body.push({
+          y: snake_props.snake_body[snake_length - 1].y,
+          x: snake_props.snake_body[snake_length - 1].x + snake_props.snake_dimension_size.w
+        })
+
+      if (snake_direction === 'left')
+        snake_props.snake_body.push({
+          y: snake_props.snake_body[snake_length - 1].y,
+          x: snake_props.snake_body[snake_length - 1].x - snake_props.snake_dimension_size.w
+        })
+
+      if (snake_direction === 'bottom')
+        snake_props.snake_body.push({
+          y: snake_props.snake_body[snake_length - 1].y + snake_props.snake_dimension_size.h,
+          x: snake_props.snake_body[snake_length - 1].x
+        })
+
+      if (snake_direction === 'top')
+        snake_props.snake_body.push({
+          y: snake_props.snake_body[snake_length - 1].y - snake_props.snake_dimension_size.h,
+          x: snake_props.snake_body[snake_length - 1].x
+        })
+
+      if (food_colision_identified) {
+
+        player_points++;
+        food_props.food_spawn_position = get_food_position();
+
+      }
+
+      if (!food_colision_identified)
+        snake_props.snake_body.shift();
+
+    }
+
+    const event_loop_game = () => {
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      document.getElementById('points').textContent = `Pontos: ${player_points}`
+
+      draw_grid();
+      draw_snake_food();
+      draw_snake_body();
+
+    }
+
+    setInterval(event_loop_game, speed * 100)
+
+  </script>
+</body>
+
+</html>
